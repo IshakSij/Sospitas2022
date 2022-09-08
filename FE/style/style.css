@@ -13,7 +13,7 @@
 
 .notes-wrapper .inner-wrapper .title {
     text-transform: uppercase;
-    font-style: bold;
+    font-weight: bold;
     font-size: 13px;
     border-bottom: 1px solid #ccc;
 }

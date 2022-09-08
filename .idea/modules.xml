@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/Sospitas2022.iml" filepath="$PROJECT_DIR$/.idea/Sospitas2022.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/ehec-project.iml" filepath="$PROJECT_DIR$/.idea/ehec-project.iml" />
     </modules>
   </component>
 </project>

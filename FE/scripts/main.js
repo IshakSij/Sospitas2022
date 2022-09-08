@@ -1,46 +1,95 @@
-const fetchData = () => {}
-fetch("https://jsonplaceholder.typicode.com/todos")
-  .then((response) => response.json())
-  .then((json) => {
-    if (json.length > 0) {
-      console.log(json)
-      json.forEach((item, index) => {
-        item.id = index
-        item.content =
-          "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries"
-        $("#cards-overview").append(renderSingleNote(item))
-      })
-    }
-  })
+const baseUrl = 'http://localhost:3000/api/'
 
-$(document).ready(() => {
-  fetchData()
-})
+const clearHome = () => {
+    $("#cards-overview").html('')
+}
 
+const fetchData = () => {
+
+    fetch(`${baseUrl}note/get-notes/${sessionStorage.getItem('username')}`, {
+        headers: {
+            'authorization': `Bearer ${sessionStorage.getItem('accessToken')}`
+        }
+    })
+        .then((response) => response.json())
+        .then(({notes}) => {
+            if (notes.length > 0) {
+                notes.forEach((item) => {
+                    item.id = item.timestamp
+                    $("#cards-overview").append(renderSingleNote(item))
+                })
+            }
+        })
+}
 const confirmAddNewNote = () => {
-  const title = $("#note_title").val()
-  const content = $("#note_content").val()
-  console.log("DATA: ", title, content)
+    const title = $("#note_title").val()
+    const content = $("#note_content").val()
+    console.log("DATA: ", title, content)
+    const username = sessionStorage.getItem('username')
+    $.ajax({
+        url: `${baseUrl}note/add`,
+        headers: {'authorization': `Bearer ${sessionStorage.getItem('accessToken')}`},
+        type: 'PUT',
+        data: {username, title, content},
+        success: function () {
+            $(`#add_new_note`).hide()
+            $(".modal-backdrop").remove()
+            clearHome()
+            fetchData()
+        },
+        error: function (xhr, ajaxOptions, thrownError) {
+            console.log({xhr, thrownError})
+            alert(`${thrownError}: ${xhr.responseJSON.message}`);
+        }
+    })
 
-  const noteWrapper = $(".notes-wrapper")
-  const newNote = renderSingleNote({ id: 1902301823, title, content })
-  noteWrapper.prepend(newNote)
 }
 
 const confirmUpdate = (id) => {
-  const newData = $(`#update-note-text-${id}`).val()
-  console.log(newData)
+    const username = sessionStorage.getItem('username')
+    const content = $(`#update-note-text-${id}`).val()
+    $.ajax({
+        url: `${baseUrl}note/update`,
+        headers: {'authorization': `Bearer ${sessionStorage.getItem('accessToken')}`},
+        type: 'PUT',
+        data: {username, timestamp: id, content},
+        success: function () {
+            $(`#note-${id}`).remove()
+            $(`#note modal-${id}`).hide()
+            $(".modal-backdrop").remove()
+            clearHome()
+            setTimeout(() => {
+                fetchData()
+            }, 0)
+        },
+        error: function (xhr, ajaxOptions, thrownError) {
+            console.log({xhr, thrownError})
+            alert(`${thrownError}: ${xhr.responseJSON.message}`);
+        }
+    })
 }
 
 const confirmDelete = (id) => {
-  console.log(id)
-  $(`#note-${id}`).remove()
-  $(`#note modal-${id}`).hide()
-  $(".modal-backdrop").remove()
+    const username = sessionStorage.getItem('username')
+
+    $.ajax({
+        url: `${baseUrl}note/delete/${username}/${id}`,
+        headers: {'authorization': `Bearer ${sessionStorage.getItem('accessToken')}`},
+        type: "DELETE",
+        success: function () {
+            $(`#note-${id}`).remove()
+            $(`#note modal-${id}`).hide()
+            $(".modal-backdrop").remove()
+        },
+        error: function (xhr, ajaxOptions, thrownError) {
+            console.log({xhr, thrownError})
+            alert(`${thrownError}: ${xhr.responseJSON.message}`);
+        }
+    })
 }
 
 const renderSingleNote = (data) => {
-  return `
+    return `
     <div class='col-lg-3 col-md-4 col-sm-6 col-xs-12 single-note-wrapper' id="note-${data?.id}">
         <div class='inner-wrapper'>
             <div class='title'>
@@ -91,7 +140,7 @@ const renderSingleNote = (data) => {
             <div class="modal-dialog modal-dialog-centered" role="document">
                 <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Are you sure you want to delete this note?</h5>
+                    <h5 class="modal-title">Are you sure you want to delete this reminder?</h5>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
@@ -103,21 +152,30 @@ const renderSingleNote = (data) => {
     </div>
     `
 }
-
-const login = () => {
-  const username = $("#login_username").val()
-  const password = $("#login_password").val()
-
-  console.log(username, password)
-
-  window.location.href =
-    "/index.html"
+const logout = () => {
+    $.ajax({
+        url: `${baseUrl}auth/logout`,
+        headers: {'authorization': `Bearer ${sessionStorage.getItem('accessToken')}`},
+        type: 'POST',
+        data: {username: sessionStorage.getItem('username')},
+        success: function (data) {
+            if (data.success) {
+                sessionStorage.clear()
+            }
+            window.location.pathname = '/'
+        },
+        error: function (xhr, ajaxOptions, thrownError) {
+            console.log({xhr, thrownError})
+            alert(`${thrownError}: ${xhr.responseJSON.message}`);
+        }
+    })
 }
-
-const register = () => {
-  const username = $("#register_username").val()
-  const password = $("#register_password").val()
-  const repeatPassword = $("#register_repeat_password").val()
-
-  console.log(username, password, repeatPassword)
-}
+$(document).ready(() => {
+    const userId = sessionStorage.getItem('userId')
+    const username = sessionStorage.getItem('username')
+    const accessToken = sessionStorage.getItem('accessToken')
+    if (!userId || !username || !accessToken) {
+        window.location.pathname = '/handle_user'
+    }
+    fetchData()
+})
